@@ -101,6 +101,16 @@ int main(int argc, char** argv) {
       ndt_omp->setNumThreads(n);
       ndt_omp->setNeighborhoodSearchMethod(search_method.second);
       aligned = align(ndt_omp, target_cloud, source_cloud);
+      std::cout << "--- Transform estimated (+ Hessian matrix) ---" << std::endl;
+      std::cout << "Transform: " << std::endl;
+      std::cout << ndt_omp->getFinalTransformation() << std::endl;
+      Eigen::Matrix<float, 3, 3> transform = ndt_omp->getFinalTransformation().block(0, 0, 3, 3);
+      std::cout << "Euler angles: " << transform.eulerAngles(2, 1, 0).transpose() << std::endl;
+      std::cout << "Hessian inverse: " << std::endl;
+      std::cout << ndt_omp->getTransformCovarianceHessian() << std::endl;
+      std::cout << "Fitness score: " << ndt_omp->getFitnessScore() << std::endl;
+      std::cout << "Transformation probability: " << ndt_omp->getTransformationProbability() << std::endl;
+      std::cout << "--- --- --- --- --- ** --- --- --- --- --- ---" << std::endl;
     }
   }
 

@@ -232,6 +232,19 @@ namespace pclomp
 		// lower is better
 		double calculateScore(const PointCloudSource& cloud) const;
 
+		/**
+		 *	\internal Forked additions:
+		 *	a)  New hessian matrix class member, to be used as a measurement of the
+		 *			transform estimation's covariance. Grant access through a getter.
+		 */
+		Eigen::Matrix<double, 6, 6> getHessian(void) const {return (this->hessian_);};
+		/**
+		 *	\brief Compute and return an estimate of the transformation covariance
+		 *	(measure of reliability). Use the eigenvalues of the inverse of the
+		 *	Hessian matrix to do so.
+		 */
+		Eigen::Matrix<double, 6, 6> getTransformCovarianceHessian(void) const;
+
 	protected:
 
 		using pcl::Registration<PointSource, PointTarget>::reg_name_;
@@ -248,7 +261,6 @@ namespace pclomp
 		using pcl::Registration<PointSource, PointTarget>::converged_;
 		using pcl::Registration<PointSource, PointTarget>::corr_dist_threshold_;
 		using pcl::Registration<PointSource, PointTarget>::inlier_threshold_;
-
 		using pcl::Registration<PointSource, PointTarget>::update_visualizer_;
 
 		/** \brief Estimate the transformation and returns the transformed source (input) as output.
@@ -489,6 +501,14 @@ namespace pclomp
   //      Eigen::Matrix<double, 18, 6> point_hessian_;
 
     int num_threads_;
+
+		/**
+		 *	\internal Forked additions:
+		 *	a)  New Hessian matrix class member, to be used as a measurement of the
+		 *			transform estimation's covariance. Grant access through a getter.
+		 */
+		Eigen::Matrix<double, 6, 6> hessian_;
+
 
 	public:
 		NeighborSearchMethod search_method;

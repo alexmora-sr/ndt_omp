@@ -44,7 +44,7 @@
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template<typename PointSource, typename PointTarget>
-pclomp::NormalDistributionsTransform<PointSource, PointTarget>::NormalDistributionsTransform () 
+pclomp::NormalDistributionsTransform<PointSource, PointTarget>::NormalDistributionsTransform ()
   : target_cells_ ()
   , resolution_ (1.0f)
   , step_size_ (0.1)
@@ -165,7 +165,10 @@ pclomp::NormalDistributionsTransform<PointSource, PointTarget>::computeTransform
 
   }
 
-  // Store transformation probability.  The realtive differences within each scan registration are accurate
+  /* ==== Once the process has converged, recover the Hessian matrix ==== */
+  this->hessian_ = hessian;
+
+  // Store transformation probability. The relative differences within each scan registration are accurate
   // but the normalization constants need to be modified for it to be globally accurate
   trans_probability_ = score / static_cast<double> (input_->points.size ());
 }
@@ -595,10 +598,10 @@ pclomp::NormalDistributionsTransform<PointSource, PointTarget>::computeHessian (
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template<typename PointSource, typename PointTarget> void
-pclomp::NormalDistributionsTransform<PointSource, PointTarget>::updateHessian (Eigen::Matrix<double, 6, 6> &hessian, 
-	const Eigen::Matrix<double, 3, 6> &point_gradient_, 
-	const Eigen::Matrix<double, 18, 6> &point_hessian_, 
-	const Eigen::Vector3d &x_trans, 
+pclomp::NormalDistributionsTransform<PointSource, PointTarget>::updateHessian (Eigen::Matrix<double, 6, 6> &hessian,
+	const Eigen::Matrix<double, 3, 6> &point_gradient_,
+	const Eigen::Matrix<double, 18, 6> &point_hessian_,
+	const Eigen::Vector3d &x_trans,
 	const Eigen::Matrix3d &c_inv) const
 {
   Eigen::Vector3d cov_dxd_pi;
@@ -950,6 +953,34 @@ double pclomp::NormalDistributionsTransform<PointSource, PointTarget>::calculate
 		}
 	}
 	return (score) / static_cast<double> (trans_cloud.size());
+}
+
+template<typename PointSource, typename PointTarget>
+Eigen::Matrix<double, 6, 6> pclomp::NormalDistributionsTransform<PointSource, PointTarget>::getTransformCovarianceHessian(void) const
+{
+  // *** Compute the inverse of the Hessian matrix *** //
+  auto hessian_inv = -(this->hessian_.inverse());
+  // std::cout << "Hessian inverse: " << std::endl << hessian_inv << std::endl;
+
+  // *** Extract the eigenvalues of the inverse Hessian to check positive-definiteness *** //
+  // Eigen::EigenSolver<Eigen::Matrix<double, 6, 6>> solver(hessian_inv);
+  // Eigen::Matrix<double, 6, 1> eigenval = solver.eigenvalues().real();
+
+  // *** *** *** *** *** *** *** ***
+  // If the inverse Hessian matrix is indeed positive definite, use it
+  // as an estimation of the covariance. If it is not, use the result of the
+  // optimization's score function as the covariance estimate
+  // (diagonal matrix with score on the diagonal).
+  // *** *** *** *** *** *** *** ***
+  // if ((eigenval.array() > 0).all())
+  return(hessian_inv);
+  // else
+  // {
+  //   Eigen::Matrix<double, 6, 6> m =
+  //     Eigen::Matrix<double, 6, 6>::Identity() *
+  //     this->getFitnessScore(std::numeric_limits< double >::max());
+  //   return(m);
+  // }
 }
 
 #endif // PCL_REGISTRATION_NDT_IMPL_H_
